@@ -16,6 +16,7 @@ Extracts list of dicts with:
 ## Installation
 
 1.Get [Python](https://www.python.org/downloads/) (recommended Python 3.7+)
+
 2.Clone or download this repository
 
 ```shell script
