@@ -4,6 +4,8 @@ import pickle
 import os
 from urllib.parse import urlparse, unquote
 from urllib.parse import parse_qs
+import pandas as pd
+import json
 
 
 class FacebookPostsScraper:
@@ -12,11 +14,11 @@ class FacebookPostsScraper:
     def __init__(self, email, password, post_url_text='Full Story'):
         self.email = email
         self.password = password
-        self.headers = { # This is the important part: Nokia C3 User Agent
+        self.headers = {  # This is the important part: Nokia C3 User Agent
             'User-Agent': 'NokiaC3-00/5.0 (07.20) Profile/MIDP-2.1 Configuration/CLDC-1.1 Mozilla/5.0 AppleWebKit/420+ (KHTML, like Gecko) Safari/420+'
         }
-        self.session = requests.session() # Create the session for the next requests
-        self.cookies_path = 'session_facebook.cki' # Give a name to store the session in a cookie file.
+        self.session = requests.session()  # Create the session for the next requests
+        self.cookies_path = 'session_facebook.cki'  # Give a name to store the session in a cookie file.
 
         # At certain point, we need find the text in the Url to point the url post, in my case, my Facebook is in
         # English, this is why it says 'Full Story', so, you need to change this for your language.
@@ -30,6 +32,7 @@ class FacebookPostsScraper:
         if self.new_session():
             self.login()
 
+        self.posts = []  # Store the scraped posts
 
     # We need to check if we already have a session saved or need to log to Facebook
     def new_session(self):
@@ -40,7 +43,6 @@ class FacebookPostsScraper:
         cookies = pickle.load(f)
         self.session.cookies = cookies
         return False
-
 
     # Utility function to make the requests and convert to soup object if necessary
     def make_request(self, url, method='GET', data=None, is_soup=True):
@@ -60,7 +62,6 @@ class FacebookPostsScraper:
         if is_soup:
             return BeautifulSoup(resp.text, 'lxml')
         return resp
-
 
     # The first time we login
     def login(self):
@@ -106,7 +107,7 @@ class FacebookPostsScraper:
 
         redirect = soup.select_one('a')
         if not redirect:
-            raise Exception('Redirect Url not found')
+            raise Exception("Please log in desktop/mobile Facebook and change your password")
 
         url_redirect = redirect.get('href', '')
         resp = self.make_request(url_redirect)
@@ -119,7 +120,6 @@ class FacebookPostsScraper:
         pickle.dump(cookies, f)
 
         return {'code': 200}
-
 
     # Scrap a list of profiles
     def get_posts_from_list(self, profiles):
@@ -134,7 +134,6 @@ class FacebookPostsScraper:
             data.append(posts)
 
         return data
-
 
     # This is the extraction point!
     def get_posts_from_profile(self, url_profile):
@@ -155,28 +154,30 @@ class FacebookPostsScraper:
             return []
 
         # Now the extraction...
-        css_profile = '.storyStream > div' # Select the posts from a user profile
-        css_page = '#recent > div > div > div' # Select the posts from a Facebook page
-        css_group = '#m_group_stories_container > div > div' # Select the posts from a Facebook group
-        raw_data = soup.select(f'{css_profile} , {css_page} , {css_group}') # Now join and scrape it
+        css_profile = '.storyStream > div'  # Select the posts from a user profile
+        css_page = '#recent > div > div > div'  # Select the posts from a Facebook page
+        css_group = '#m_group_stories_container > div > div'  # Select the posts from a Facebook group
+        raw_data = soup.select(f'{css_profile} , {css_page} , {css_group}')  # Now join and scrape it
         posts = []
-        for item in raw_data: # Now, for every post...
-            published = item.select_one('abbr') # Get the formatted datetime of published
-            description = item.select('p') # Get list of all p tag, they compose the description
-            images = item.select('a > img') # Get list of all images
-            _external_links = item.select('p a') # Get list of any link in the description, this are external links
-            post_url = item.find('a', text=self.post_url_text) # Get the url to point this post.
-            like_url = item.find('a', text='Like') # Get the Like url.
+        for item in raw_data:  # Now, for every post...
+            published = item.select_one('abbr')  # Get the formatted datetime of published
+            description = item.select('p')  # Get list of all p tag, they compose the description
+            images = item.select('a > img')  # Get list of all images
+            _external_links = item.select('p a')  # Get list of any link in the description, this are external links
+            post_url = item.find('a', text=self.post_url_text)  # Get the url to point this post.
+            like_url = item.find('a', text='Like')  # Get the Like url.
 
             # Clean the publish date
             if published is not None:
                 published = published.get_text()
-            else: published = ''
+            else:
+                published = ''
 
             # Join all the text in p tags, else set empty string
             if len(description) > 0:
                 description = '\n'.join([d.get_text() for d in description])
-            else: description = ''
+            else:
+                description = ''
 
             # Get all the images links
             images = [image.get('src', '') for image in images]
@@ -192,14 +193,16 @@ class FacebookPostsScraper:
                         post_url = f'{p_url.scheme}://{p_url.hostname}{p_url.path}?story_fbid={qs["story_fbid"][0]}&id={qs["id"][0]}'
                     else:
                         post_url = f'{p_url.scheme}://{p_url.hostname}{p_url.path}/permalink/{qs["id"][0]}/'
-            else: post_url = ''
+            else:
+                post_url = ''
 
             # Clean the Like link
             if like_url is not None:
                 like_url = like_url.get('href', '')
                 if len(like_url) > 0:
                     like_url = f'https://m.facebook.com{like_url}'
-            else: like_url = ''
+            else:
+                like_url = ''
 
             # Get list of external links in post description, if any inside
             external_links = []
@@ -213,7 +216,33 @@ class FacebookPostsScraper:
                     external_links.append(link)
                 except ValueError as e:
                     continue
-
-            posts.append({'published': published, 'description': description, 'images': images,
-                          'post_url': post_url, 'external_links': external_links, 'like_url': like_url})
+            post = {'published': published, 'description': description, 'images': images,
+                    'post_url': post_url, 'external_links': external_links, 'like_url': like_url}
+            posts.append(post)
+            self.posts.append(post)
         return posts
+
+    def posts_to_csv(self, filename):
+        if filename[:-4] != '.csv':
+            filename = f'{filename}.csv'
+
+        df = pd.DataFrame(self.posts)
+        df.to_csv(filename)
+
+    def posts_to_excel(self, filename):
+        if filename[:-5] != '.xlsx':
+            filename = f'{filename}.xlsx'
+
+        df = pd.DataFrame(self.posts)
+        df.to_excel(filename)
+
+    def posts_to_json(self, filename):
+        if filename[:-5] != '.json':
+            filename = f'{filename}.json'
+
+        with open(filename, 'w') as f:
+            f.write('[')
+            for entry in self.posts:
+                json.dump(entry, f)
+                f.write(',\n')
+            f.write(']')

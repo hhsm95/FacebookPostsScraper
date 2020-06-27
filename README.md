@@ -86,6 +86,10 @@ fps = Fps(email, password, post_url_text='Full Story')
 single_profile = 'https://www.facebook.com/BillGates'
 data = fps.get_posts_from_profile(single_profile)
 pp(data)
+
+fps.posts_to_csv('my_posts')  # You can export the posts as CSV document
+# fps.posts_to_excel('my_posts')  # You can export the posts as Excel document
+# fps.posts_to_json('my_posts')  # You can export the posts as JSON document
 ```
 
 ### Example with multiple urls
@@ -109,6 +113,10 @@ profiles = [
 ]
 data = fps.get_posts_from_list(profiles)
 pp(data)
+
+fps.posts_to_csv('my_posts')  # You can export the posts as CSV document
+# fps.posts_to_excel('my_posts')  # You can export the posts as Excel document
+# fps.posts_to_json('my_posts')  # You can export the posts as JSON document
 ```
 
 ## Questions

@@ -1,8 +1,16 @@
 beautifulsoup4==4.9.0
 certifi==2020.4.5.1
 chardet==3.0.4
+et-xmlfile==1.0.1
 idna==2.9
+jdcal==1.4.1
 lxml==4.5.0
+numpy==1.19.0
+openpyxl==3.0.4
+pandas==1.0.5
+python-dateutil==2.8.1
+pytz==2020.1
 requests==2.23.0
+six==1.15.0
 soupsieve==2.0
 urllib3==1.25.9
