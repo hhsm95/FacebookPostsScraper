@@ -277,7 +277,7 @@ class FacebookPostsScraper:
         posts = []
         for item in raw_data:  # Now, for every post...
         
-            username = item.select_one('h3 > span > strong')
+            username = item.select_one('h3 > span > strong').get_text()
             published = item.select_one('abbr')  # Get the formatted datetime of published
             description = item.select('p')  # Get list of all p tag, they compose the description
             images = item.select('a > img')  # Get list of all images
@@ -308,9 +308,9 @@ class FacebookPostsScraper:
                     p_url = urlparse(post_url)
                     qs = parse_qs(p_url.query)
                     if not is_group:
-                        post_url = f'{p_url.scheme}://{p_url.hostname}{p_url.path}?fbid={qs["fbid"][0]}&id={qs["id"][0]}'
+                        post_url = f'{p_url.scheme}://{p_url.hostname}{p_url.path}?story_fbid={qs["story_fbid"][0]}&id={qs["id"][0]}'
                     else:
-                        post_url = f'{p_url.scheme}://{p_url.hostname}{p_url.path}/permalink/{qs["id"][0]}/'
+                        post_url = f'{p_url.scheme}://{p_url.hostname}{p_url.path}/permalink/{qs["id"][0]}/'                    
             else:
                 post_url = ''
 
