@@ -2,10 +2,12 @@ import requests
 from bs4 import BeautifulSoup
 import pickle
 import os
-from urllib.parse import urlparse, unquote
-from urllib.parse import parse_qs
+from urllib.parse import urlparse, unquote, quote, parse_qs
 import pandas as pd
 import json
+
+from datetime import datetime, timedelta
+from base64 import b64encode
 
 
 class FacebookPostsScraper:
@@ -245,4 +247,98 @@ class FacebookPostsScraper:
             for entry in self.posts:
                 json.dump(entry, f)
                 f.write(',\n')
-            f.write(']')
+                f.write(']')
+
+    def search_posts(self, search_term):
+
+        today = datetime.date(datetime.now()) - timedelta(days=1)
+        YEAR = today.strftime("%Y")
+        MONTH = today.strftime("%m")
+        DAY = today.strftime("%d")
+
+        time_range = '{"rp_creation_time":"{\\"name\\":\\"creation_time\\",\\"args\\":\\"{\\\\\\"start_year\\\\\\":\\\\\\"'+YEAR+'\\\\\\",\\\\\\"start_month\\\\\\":\\\\\\"'+YEAR+'-'+MONTH+'\\\\\\",\\\\\\"end_year\\\\\\":\\\\\\"'+YEAR+'\\\\\\",\\\\\\"end_month\\\\\\":\\\\\\"'+YEAR+'-'+MONTH+'\\\\\\",\\\\\\"start_day\\\\\\":\\\\\\"'+YEAR+'-'+MONTH+'-'+DAY+'\\\\\\",\\\\\\"end_day\\\\\\":\\\\\\"'+YEAR+'-'+MONTH+'-'+DAY+'\\\\\\"}\\"}"}'
+        b64_time_range = b64encode(time_range.encode()).decode()
+
+        # Make a simple GET request
+
+        url_search =  f"https://m.facebook.com/search/posts/?q={quote(search_term)}"\
+            f"&epa=FILTERS&filters={b64_time_range}"
+        soup = self.make_request(url_search)
+
+        if soup is None:
+            print(f"Couldn't     load the searh: {search_term}")
+            return []
+
+
+        raw_data = soup.select("#BrowseResultsContainer")
+
+        is_group = '/groups/' in url_search
+
+        posts = []
+        for item in raw_data:  # Now, for every post...
+        
+            username = item.select_one('h3 > span > strong')
+            published = item.select_one('abbr')  # Get the formatted datetime of published
+            description = item.select('p')  # Get list of all p tag, they compose the description
+            images = item.select('a > img')  # Get list of all images
+            _external_links = item.select('p a')  # Get list of any link in the description, this are external links
+            post_url = item.find('a', text=self.post_url_text)  # Get the url to point this post.
+            like_url = item.find('a', text='Like')  # Get the Like url.
+            
+            # Clean the publish date
+            if published is not None:
+                published = published.get_text()
+            else:
+                published = ''
+
+            # Join all the text in p tags, else set empty string
+            if len(description) > 0:
+                description = '\n'.join([d.get_text() for d in description])
+            else:
+                description = ''
+
+            # Get all the images links
+            images = [image.get('src', '') for image in images]
+
+            # Clean the post link
+            if post_url is not None:
+                post_url = post_url.get('href', '')
+                if len(post_url) > 0:
+                    post_url = f'https://www.facebook.com{post_url}'
+                    p_url = urlparse(post_url)
+                    qs = parse_qs(p_url.query)
+                    if not is_group:
+                        post_url = f'{p_url.scheme}://{p_url.hostname}{p_url.path}?story_fbid={qs["story_fbid"][0]}&id={qs["id"][0]}'
+                    else:
+                        post_url = f'{p_url.scheme}://{p_url.hostname}{p_url.path}/permalink/{qs["id"][0]}/'
+            else:
+                post_url = ''
+
+            # Clean the Like link
+            if like_url is not None:
+                like_url = like_url.get('href', '')
+                if len(like_url) > 0:
+                    like_url = f'https://m.facebook.com{like_url}'
+            else:
+                like_url = ''
+
+            # Get list of external links in post description, if any inside
+            external_links = []
+            for link in _external_links:
+                link = link.get('href', '')
+                try:
+                    a = link.index("u=") + 2
+                    z = link.index("&h=")
+                    link = unquote(link[a:z])
+                    link = link.split("?fbclid=")[0]
+                    external_links.append(link)
+                except ValueError as e:
+                    continue            
+
+            post = {'username': username,'published': published, 'description': description, 'images': images,
+                    'post_url': post_url, 'external_links': external_links, 'like_url': like_url}
+
+            posts.append(post)
+            self.posts.append(post)
+        return  posts
+        

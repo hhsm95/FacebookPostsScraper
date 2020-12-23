@@ -67,6 +67,16 @@ return:
 
 - list of list of dicts with the data described above
 
+`search_posts`
+
+params:
+
+- Search Term
+
+return:
+
+- list of list of dicts with the data described above
+
 ## Examples
 
 ### Example with single url
@@ -117,6 +127,28 @@ pp(data)
 fps.posts_to_csv('my_posts')  # You can export the posts as CSV document
 # fps.posts_to_excel('my_posts')  # You can export the posts as Excel document
 # fps.posts_to_json('my_posts')  # You can export the posts as JSON document
+```
+
+### Example with search terms
+
+```python
+from FacebookPostsScraper import FacebookPostsScraper as Fps
+from pprint import pprint as pp
+
+# Enter your Facebook email and password
+email = 'YOUR_EMAIL'
+password = 'YOUR_PASWORD'
+
+# Instantiate an object
+fps = Fps(email, password, post_url_text='Full Story')
+
+# Example with search posts
+fps.search_posts('Pandas')
+
+fps.posts_to_csv('my_posts')  # You can export the posts as CSV document
+# fps.posts_to_excel('my_posts')  # You can export the posts as Excel document
+# fps.posts_to_json('my_posts')  # You can export the posts as JSON document
+
 ```
 
 ## Questions

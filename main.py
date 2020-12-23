@@ -29,6 +29,9 @@ def main():
     # fps.posts_to_excel('my_posts')  # You can export the posts as Excel document
     # fps.posts_to_json('my_posts')  # You can export the posts as JSON document
 
+    data = fps.search_posts("Pandas")
+    pp(data)
+
 
 if __name__ == '__main__':
     main()
