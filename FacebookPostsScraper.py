@@ -272,19 +272,17 @@ class FacebookPostsScraper:
 
         raw_data = soup.select("#BrowseResultsContainer")
 
-        is_group = '/groups/' in url_search
-
         posts = []
         for item in raw_data:  # Now, for every post...
         
-            username = item.select_one('h3 > span > strong').get_text()
+            username = item.select_one('h3 strong > a ').text            
             published = item.select_one('abbr')  # Get the formatted datetime of published
             description = item.select('p')  # Get list of all p tag, they compose the description
             images = item.select('a > img')  # Get list of all images
             _external_links = item.select('p a')  # Get list of any link in the description, this are external links
             post_url = item.find('a', text=self.post_url_text)  # Get the url to point this post.
             like_url = item.find('a', text='Like')  # Get the Like url.
-            
+
             # Clean the publish date
             if published is not None:
                 published = published.get_text()
@@ -303,14 +301,28 @@ class FacebookPostsScraper:
             # Clean the post link
             if post_url is not None:
                 post_url = post_url.get('href', '')
+                
                 if len(post_url) > 0:
-                    post_url = f'https://www.facebook.com{post_url}'
-                    p_url = urlparse(post_url)
-                    qs = parse_qs(p_url.query)
-                    if not is_group:
-                        post_url = f'{p_url.scheme}://{p_url.hostname}{p_url.path}?story_fbid={qs["story_fbid"][0]}&id={qs["id"][0]}'
+                    if ('/groups/' not in post_url) and ('/photos/' not in post_url) :
+                        post_url = f'https://www.facebook.com{post_url}'
+                        p_url = urlparse(post_url)
+                        qs = parse_qs(p_url.query)
+                        if 'story_fbid' in qs:
+                            post_url = f'{p_url.scheme}://{p_url.hostname}{p_url.path}?story_fbid={qs["story_fbid"][0]}&id={qs["id"][0]}'
+                        elif 'fbid' in qs :
+                            post_url = f'{p_url.scheme}://{p_url.hostname}{p_url.path}?fbid={qs["fbid"][0]}&id={qs["id"][0]}'
+                    elif('/photos/'  in post_url) :
+                        post_url = f'https://www.facebook.com{post_url}'
+                        p_url = urlparse(post_url)
+                        post_url = f'{p_url.scheme}://{p_url.hostname}{p_url.path}'
+                        post_url = post_url.replace("m.facebook.com", "www.facebook.com")
+
                     else:
-                        post_url = f'{p_url.scheme}://{p_url.hostname}{p_url.path}/permalink/{qs["id"][0]}/'                    
+                        #post_url = f'{p_url.scheme}://{p_url.hostname}{p_url.path}/permalink/{qs["id"][0]}/'
+                        p_url = urlparse(post_url)
+                        post_url = f'{p_url.scheme}://{p_url.hostname}{p_url.path}'
+                        post_url = post_url.replace("m.facebook.com", "www.facebook.com")
+
             else:
                 post_url = ''
 
