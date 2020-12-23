@@ -147,7 +147,7 @@ class FacebookPostsScraper:
             else:
                 url_profile = f'{url_profile}?v=timeline'
 
-        is_group = '/groups/' in url_profile
+        #is_group = '/groups/' in url_profile
 
         # Make a simple GET request
         soup = self.make_request(url_profile)
@@ -188,13 +188,26 @@ class FacebookPostsScraper:
             if post_url is not None:
                 post_url = post_url.get('href', '')
                 if len(post_url) > 0:
-                    post_url = f'https://www.facebook.com{post_url}'
-                    p_url = urlparse(post_url)
-                    qs = parse_qs(p_url.query)
-                    if not is_group:
-                        post_url = f'{p_url.scheme}://{p_url.hostname}{p_url.path}?fbid={qs["fbid"][0]}&id={qs["id"][0]}'
+                    if ('/groups/' not in post_url) and ('/photos/' not in post_url) :
+                        post_url = f'https://www.facebook.com{post_url}'
+                        p_url = urlparse(post_url)
+                        qs = parse_qs(p_url.query)
+                        if 'story_fbid' in qs:
+                            post_url = f'{p_url.scheme}://{p_url.hostname}{p_url.path}?story_fbid={qs["story_fbid"][0]}&id={qs["id"][0]}'
+                        elif 'fbid' in qs :
+                            post_url = f'{p_url.scheme}://{p_url.hostname}{p_url.path}?fbid={qs["fbid"][0]}&id={qs["id"][0]}'
+                    elif('/photos/'  in post_url) :
+                        post_url = f'https://www.facebook.com{post_url}'
+                        p_url = urlparse(post_url)
+                        post_url = f'{p_url.scheme}://{p_url.hostname}{p_url.path}'
+                        post_url = post_url.replace("m.facebook.com", "www.facebook.com")
+
                     else:
-                        post_url = f'{p_url.scheme}://{p_url.hostname}{p_url.path}/permalink/{qs["id"][0]}/'
+                        #post_url = f'{p_url.scheme}://{p_url.hostname}{p_url.path}/permalink/{qs["id"][0]}/'
+                        p_url = urlparse(post_url)
+                        post_url = f'{p_url.scheme}://{p_url.hostname}{p_url.path}'
+                        post_url = post_url.replace("m.facebook.com", "www.facebook.com")
+
             else:
                 post_url = ''
 
