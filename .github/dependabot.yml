@@ -9,9 +9,3 @@ updates:
     directory: "/" # Location of package manifests
     schedule:
       interval: "daily"
-name: Build
-on:
-  push:
-    branches: [ master ]
-  pull_request:
-    branches: [ master ]
