@@ -201,7 +201,6 @@ class FacebookPostsScraper:
                         p_url = urlparse(post_url)
                         post_url = f'{p_url.scheme}://{p_url.hostname}{p_url.path}'
                         post_url = post_url.replace("m.facebook.com", "www.facebook.com")
-
                     else:
                         #post_url = f'{p_url.scheme}://{p_url.hostname}{p_url.path}/permalink/{qs["id"][0]}/'
                         p_url = urlparse(post_url)

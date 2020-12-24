@@ -11,7 +11,7 @@ setuptools.setup(
     description="Scraper for posts in Facebook.",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/eufelipemateus/FacebookPostsScraper.git",
+    url="https://github.com/eufelipemateus/facebook-scraper-api.git",
     packages=setuptools.find_packages(),
     classifiers=[
         "Programming Language :: Python :: 3",
