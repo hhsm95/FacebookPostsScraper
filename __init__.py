@@ -1,1 +1,1 @@
-from FacebookPostsScraper import FacebookPostsScraper
+from .FacebookPostsScraper import FacebookPostsScraper
