@@ -190,9 +190,9 @@ class FacebookPostsScraper:
                     p_url = urlparse(post_url)
                     qs = parse_qs(p_url.query)
                     if not is_group:
-                        post_url = f'{p_url.scheme}://{p_url.hostname}{p_url.path}?story_fbid={qs["story_fbid"][0]}&id={qs["id"][0]}'
+                        post_url = f'{p_url.scheme}://{p_url.hostname}{p_url.path}?story_fbid={qs["story_fbid"][0]}&id={qs["refid"][0]}'
                     else:
-                        post_url = f'{p_url.scheme}://{p_url.hostname}{p_url.path}/permalink/{qs["id"][0]}/'
+                        post_url = f'{p_url.scheme}://{p_url.hostname}{p_url.path}/permalink/{qs["refid"][0]}/'
             else:
                 post_url = ''
 
