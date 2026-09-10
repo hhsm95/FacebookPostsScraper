@@ -1,5 +1,42 @@
 # FacebookPostsScraper
 
+> ## ⚠️ Unmaintained — this scraper no longer works
+>
+> **Facebook broke it, and it cannot be patched.** Verified against Facebook as of
+> September 2026: the code fails on its very first request, before your credentials
+> are even sent.
+>
+> This project worked by sending a **Nokia C3 User-Agent** so that Facebook would
+> serve the old JavaScript-free mobile HTML, which was simple enough to parse. All
+> three pillars of that approach are now gone:
+>
+> 1. **The legacy User-Agent is blocked.** `m.facebook.com` and `mbasic.facebook.com`
+>    both answer with a 3.7 KB error page — *"Facebook is not available on this
+>    device"* — served with **HTTP 200**, so the request looks successful and the
+>    failure only surfaces later as a confusing `AttributeError`.
+> 2. **The login form is gone.** The six hidden fields `login()` scrapes (`lsd`,
+>    `jazoest`, `m_ts`, `li`, `try_number`, `unrecognized_tries`) no longer exist —
+>    not even with a modern User-Agent. Login is a React app now.
+> 3. **The post selectors match nothing.** `.storyStream > div`, `#recent > div > div > div`
+>    and `#m_group_stories_container > div > div` all return zero nodes.
+>
+> Running the example raises:
+>
+> ```
+> File "FacebookPostsScraper.py", line 75, in login
+>     lsd = soup.find("input", {"name": "lsd"}).get("value")
+> AttributeError: 'NoneType' object has no attribute 'get'
+> ```
+>
+> Separately, `requirements.txt` no longer installs on Python 3.12+: `numpy==1.19.0`
+> needs `distutils`, which was removed from the standard library.
+>
+> **No fix is planned.** Restoring this would mean a fundamentally different project,
+> and automated credential login now also runs into 2FA and Facebook's security
+> checkpoints. If you need Facebook data today, use the official
+> [Graph API](https://developers.facebook.com/docs/graph-api/). The code below is kept
+> for reference and as a snapshot of a technique that worked from 2020 to roughly 2023.
+
 Scraper for posts in Facebook user profiles, pages and groups.
 
 Extracts list of dicts with:
